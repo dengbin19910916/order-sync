@@ -65,6 +65,8 @@ public class Property {
 
     private String tokenName;
 
+    private String token;
+
     private String tokenPath;
 
     private String cidPath;

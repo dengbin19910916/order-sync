@@ -2,13 +2,12 @@ package com.purcotton.omni.ordersync.core;
 
 import com.alibaba.fastjson.JSON;
 import com.purcotton.omni.ordersync.core.event.AdditionEvent;
+import com.purcotton.omni.ordersync.core.event.RegisterEvent;
 import com.purcotton.omni.ordersync.domain.Property;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.leader.LeaderLatch;
-import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.zookeeper.data.Stat;
 import org.quartz.*;
 import org.springframework.boot.ApplicationArguments;
@@ -22,11 +21,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.UUID;
 
 import static com.purcotton.omni.ordersync.core.JobHelper.JOB_PATH;
-import static com.purcotton.omni.ordersync.core.JobHelper.LEADER_PATH;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
 @Slf4j
@@ -38,8 +34,6 @@ public class ScheduleManager implements ApplicationRunner, ApplicationListener<A
     private final RestTemplate restTemplate;
     private final CuratorFramework client;
     private final Scheduler scheduler;
-
-    private volatile boolean leader;
 
     public ScheduleManager(ApplicationContext applicationContext,
                            RestTemplate restTemplate,
@@ -58,10 +52,13 @@ public class ScheduleManager implements ApplicationRunner, ApplicationListener<A
         cache.getListenable().addListener((client, event) -> {
             switch (event.getType()) {
                 case CHILD_ADDED:
+                    log.debug("Path: " + event.getData().getPath());
+                    log.debug("Data: " + new String(event.getData().getData()));
                     try {
                         Property property = JSON.parseObject(event.getData().getData(), Property.class);
                         applicationContext.publishEvent(new AdditionEvent(property));
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                     break;
                 case CHILD_REMOVED:
@@ -71,41 +68,6 @@ public class ScheduleManager implements ApplicationRunner, ApplicationListener<A
             }
         });
         cache.start();
-
-        var leaderLatch = new LeaderLatch(client, LEADER_PATH,
-                UUID.randomUUID().toString().replaceAll("-", ""));
-        leaderLatch.addListener(new LeaderLatchListener() {
-            @SneakyThrows
-            @Override
-            public void isLeader() {
-                setLeader(true);
-                if (log.isDebugEnabled()) {
-                    log.debug("Currently run as leader");
-                }
-
-                Stat stat = client.checkExists().forPath(JOB_PATH);
-                if (stat == null) {
-                    client.create().creatingParentContainersIfNeeded()
-                            .withMode(PERSISTENT).forPath(JOB_PATH);
-                }
-
-                List<String> childPaths = client.getChildren().forPath(JOB_PATH);
-                for (String childPath : childPaths) {
-                    Property property = JSON.parseObject(
-                            client.getData().forPath("/omni/sync/job/" + childPath), Property.class);
-                    addJob(property);
-                }
-            }
-
-            @Override
-            public void notLeader() {
-                if (log.isDebugEnabled()) {
-                    log.debug("Currently run as slave");
-                }
-                setLeader(false);
-            }
-        });
-        leaderLatch.start();
     }
 
     @SneakyThrows
@@ -133,29 +95,27 @@ public class ScheduleManager implements ApplicationRunner, ApplicationListener<A
     @SneakyThrows
     @Override
     public void onApplicationEvent(@Nonnull ApplicationEvent event) {
-//        if (event instanceof RegisterEvent) {
-//            Property property = (Property) event.getSource();
-//            String beanName = property.getBeanName();
-//            String path = JOB_PATH + "/" + beanName;
-//
-//            Stat stat = client.checkExists().forPath(path);
-//            if (stat == null) {
-//                client.create().creatingParentContainersIfNeeded()
-//                        .withMode(PERSISTENT).forPath(path);
-//            }
-//            client.setData().forPath(path, JSON.toJSONBytes(property));
-//        }
+        if (event instanceof RegisterEvent) {
+            if (SyncContext.isLeader()) {
+                Property property = (Property) event.getSource();
+                String beanName = property.getBeanName();
+
+                String path = JOB_PATH + "/" + beanName;
+                Stat stat = client.checkExists().forPath(path);
+                if (stat == null) {
+                    client.create().creatingParentContainersIfNeeded()
+                            .withMode(PERSISTENT).forPath(path);
+                }
+                log.debug("Register: " + new String(JSON.toJSONBytes(property)));
+                client.setData().forPath(path, JSON.toJSONBytes(property));
+            }
+        }
 
         if (event instanceof AdditionEvent) {
-            addJob((Property) event.getSource());
+            if (SyncContext.isLeader()) {
+                addJob((Property) event.getSource());
+            }
         }
     }
 
-    public synchronized boolean isLeader() {
-        return leader;
-    }
-
-    public synchronized void setLeader(boolean leader) {
-        this.leader = leader;
-    }
 }
