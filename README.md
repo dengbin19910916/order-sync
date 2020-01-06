@@ -4,6 +4,7 @@
 
 post: localhost:8080/properties
 
+销售单（TB-TRADE-10000）
 ```json
 {
 	"orderChannel": "TB", 
@@ -29,6 +30,7 @@ post: localhost:8080/properties
 }
 ```
 
+退单（TB-REFUND-8524）
 ```json
 {
 	"orderChannel": "TB", 
