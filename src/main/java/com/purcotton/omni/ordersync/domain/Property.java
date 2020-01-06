@@ -116,8 +116,7 @@ public class Property {
         return CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL,
                 Stream.of(orderChannel, orderType, shopCode)
                         .filter(value -> !ObjectUtils.isEmpty(value))
-                        .collect(Collectors.joining("_")))
-                + "Synchronizer";
+                        .collect(Collectors.joining("_")));
     }
 
     @Override

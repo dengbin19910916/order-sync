@@ -11,10 +11,7 @@ import com.purcotton.omni.ordersync.domain.Property;
 import com.purcotton.omni.ordersync.domain.Schedule;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.PersistJobDataAfterExecution;
+import org.quartz.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -34,13 +31,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @DisallowConcurrentExecution
 @PersistJobDataAfterExecution
-public class Synchronizer implements Job {
+public class Synchronizer implements InterruptableJob {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private Thread currentThread;
 
     @SneakyThrows
     @Override
     public void execute(JobExecutionContext context) {
+        currentThread = Thread.currentThread();
+
+        if (log.isDebugEnabled()) {
+            log.debug("Job started.");
+        }
+
         var jobDataMap = context.getMergedJobDataMap();
         var applicationContext = (ApplicationContext) jobDataMap.get("applicationContext");
         var property = (Property) jobDataMap.get("property");
@@ -216,4 +221,15 @@ public class Synchronizer implements Job {
         return host + "/" + path;
     }
 
+    @Override
+    public void interrupt() throws UnableToInterruptJobException {
+        if (currentThread == null) {
+            throw new UnableToInterruptJobException("Thread not found");
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Job interrupt.");
+        }
+        currentThread.interrupt();
+    }
 }
