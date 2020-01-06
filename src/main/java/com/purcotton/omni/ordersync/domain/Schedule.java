@@ -17,18 +17,22 @@ public class Schedule {
     @ManyToOne
     private Property property;
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime startTime;
 
     private Long startTimeMillis;
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime endTime;
 
     private Long endTimeMillis;
 
     private boolean completed;
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime createdTime;
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime updatedTime;
 
     @OneToMany(mappedBy = "schedule")

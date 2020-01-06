@@ -28,12 +28,15 @@ public class Property {
     @NotEmpty
     private String orderChannel;
 
+    @Column(length = 30)
     private String orderType = "";
 
+    @Column(length = 10)
     private String shopCode = "";
 
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(columnDefinition = "datetime")
     private LocalDateTime originTime;
 
     private boolean enabled;
@@ -45,42 +48,59 @@ public class Property {
      * 时间向前的偏移量，主要是为了解决阿里订单的时延问题。
      * 如果同步的平台存在类似的问题的时候，可以选择覆盖此方法来缓解问题。
      */
+    @Column(columnDefinition = "integer")
     private Integer startTimeOffset;
     /**
      * 同步时间延时（默认60秒）
      */
+    @Column(columnDefinition = "integer")
     private Integer delay;
     /**
      * 每页大小。
      */
+    @Column(columnDefinition = "integer")
     private Integer pageSize;
 
+    @Column(columnDefinition = "integer")
     private Integer triggerInterval;
 
+    @Column(length = 100)
     private String host;
 
+    @Column(length = 300)
     private String pagePath;
 
+    @Column(length = 300)
     private String dataPath;
 
+    @Column(length = 30)
     private String tokenName;
 
+    @Column(length = 300)
     private String tokenValue;
 
+    @Column(length = 300)
     private String tokenPath;
 
+    @Column(length = 100)
     private String cidPath;
 
+    @Column(length = 100)
     private String tidPath;
 
+    @Column(length = 100)
     private String ridPath;
 
+    @Column(length = 100)
     private String createdTimePath;
 
+    @Column(length = 100)
     private String updatedTimePath;
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime createdTime = LocalDateTime.now();
 
+    @Column(columnDefinition = "datetime")
     private LocalDateTime updatedTime = LocalDateTime.now();
 
     @JSONField(serialize = false)

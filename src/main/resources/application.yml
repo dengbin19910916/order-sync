@@ -1,4 +1,9 @@
 spring:
+  profiles:
+    active: local
+---
+spring:
+  profiles: local
   flyway:
     enabled: false
   datasource:
@@ -17,3 +22,24 @@ logging:
         omni:
           ordersync:
             core: debug
+---
+spring:
+  profiles: dev
+  flyway:
+    enabled: false
+  datasource:
+    url: jdbc:mysql://192.168.206.201:3306/tradedb?characterEncoding=utf-8&useUnicode=true&useSSL=false&allowMultiQueries=true&serverTimezone=Asia/Shanghai
+    username: tradeuser
+    password: Tradeuser123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: true
+logging:
+  level:
+    com:
+      purcotton:
+        omni:
+          ordersync:
+            core: info
