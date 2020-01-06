@@ -28,12 +28,7 @@ public class RestConfig {
 
     @Bean
     public ClientHttpRequestFactory httpsFactory() throws Exception {
-        CloseableHttpClient httpClient = httpClient();
-        HttpComponentsClientHttpRequestFactory httpsFactory =
-                new HttpComponentsClientHttpRequestFactory(httpClient);
-        httpsFactory.setReadTimeout(60000);
-        httpsFactory.setConnectTimeout(60000);
-        return httpsFactory;
+        return new HttpComponentsClientHttpRequestFactory(httpClient());
     }
 
     private static CloseableHttpClient httpClient() throws Exception {
@@ -50,7 +45,7 @@ public class RestConfig {
 
         PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager(registry);
         manager.setMaxTotal(100);
-        manager.setDefaultMaxPerRoute(10);
+        manager.setDefaultMaxPerRoute(20);
 
         return HttpClientBuilder.create()
                 .setSSLContext(sslContext)

@@ -138,6 +138,7 @@ public class Synchronizer implements Job {
                     })
                     .getBody();
         } catch (Exception e) {
+            log.error("Get page failed.", e);
             throw new SyncException("Get page failed", e);
         }
     }
@@ -158,6 +159,7 @@ public class Synchronizer implements Job {
                     })
                     .getBody();
         } catch (Exception e) {
+            log.error("Get data failed.", e);
             throw new SyncException("Get data failed", e);
         }
     }
@@ -182,8 +184,8 @@ public class Synchronizer implements Job {
         try {
             return JSONPath.eval(object, path).toString();
         } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+            log.error("Build order failed.", e);
+            throw new SyncException("Build order failed", e);
         }
     }
 
