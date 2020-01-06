@@ -33,7 +33,7 @@ public class JobManager implements ApplicationListener<ApplicationEvent> {
     }
 
     @SneakyThrows
-    private void addJob(Property property) {
+    private synchronized void addJob(Property property) {
         JobKey jobKey = new JobKey(property.getBeanName());
         JobDetail jobDetail = scheduler.checkExists(jobKey)
                 ? scheduler.getJobDetail(jobKey)
