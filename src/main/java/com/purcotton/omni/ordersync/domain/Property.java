@@ -88,6 +88,10 @@ public class Property {
     private List<Schedule> schedules;
 
     @JSONField(serialize = false)
+    @OneToMany(mappedBy = "property")
+    private List<OmniOrder> orders;
+
+    @JSONField(serialize = false)
     public String getBeanName() {
         return CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL,
                 Stream.of(orderChannel, orderType, shopCode)

@@ -135,6 +135,7 @@ public class Synchronizer implements Job {
 
     private OmniOrder buildOrder(JSONObject datum, Property property, LocalDateTime now) {
         OmniOrder order = new OmniOrder();
+        order.setProperty(property);
         order.setCid(getJsonValue(datum, property.getCidPath()));
         order.setTid(getJsonValue(datum, property.getTidPath()));
         if (!ObjectUtils.isEmpty(property.getRidPath())) {
