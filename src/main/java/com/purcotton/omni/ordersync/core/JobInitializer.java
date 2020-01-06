@@ -15,21 +15,20 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import static com.purcotton.omni.ordersync.core.JobHelper.JOB_PATH;
-import static com.purcotton.omni.ordersync.core.JobHelper.LEADER_PATH;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
 @Slf4j
 @Component
-@Order(0)
-public class SchedulerInitializer implements ApplicationRunner {
+@Order(1)
+public class JobInitializer implements ApplicationRunner {
 
     private final GenericApplicationContext applicationContext;
     private final PropertyRepository propertyRepository;
     private final CuratorFramework client;
 
-    public SchedulerInitializer(GenericApplicationContext applicationContext,
-                                PropertyRepository propertyRepository,
-                                CuratorFramework client) {
+    public JobInitializer(GenericApplicationContext applicationContext,
+                          PropertyRepository propertyRepository,
+                          CuratorFramework client) {
         this.applicationContext = applicationContext;
         this.propertyRepository = propertyRepository;
         this.client = client;
@@ -37,24 +36,27 @@ public class SchedulerInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        createPath(JOB_PATH);
-        createPath(LEADER_PATH);
+        if (SyncContext.isLeader()) {
+            createPath();
 
-        var properties = propertyRepository.findAll();
-        for (Property property : properties) {
-            Stat stat = client.checkExists().forPath(JOB_PATH + "/" + property.getBeanName());
-            if (stat == null) {
-                applicationContext.publishEvent(new RegisterEvent(property));
+            var properties = propertyRepository.findAll();
+            SyncContext.addAllProperty(properties);
+
+            for (Property property : properties) {
+                Stat stat = client.checkExists().forPath(JOB_PATH + "/" + property.getBeanName());
+                if (stat == null) {
+                    applicationContext.publishEvent(new RegisterEvent(property));
+                }
+                applicationContext.publishEvent(new AdditionEvent(property, true));
             }
-            applicationContext.publishEvent(new AdditionEvent(property, true));
         }
     }
 
     @SneakyThrows
-    private void createPath(String path) {
-        if (client.checkExists().forPath(path) == null) {
+    private void createPath() {
+        if (client.checkExists().forPath(JobHelper.JOB_PATH) == null) {
             client.create().creatingParentContainersIfNeeded()
-                    .withMode(PERSISTENT).forPath(path);
+                    .withMode(PERSISTENT).forPath(JobHelper.JOB_PATH);
         }
     }
 }
