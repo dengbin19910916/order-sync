@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: pg
+    active: dev
 ---
 spring:
   profiles: local
