@@ -1,5 +1,6 @@
 package com.purcotton.omni.ordersync.core;
 
+import com.purcotton.omni.ordersync.core.event.AdditionEvent;
 import com.purcotton.omni.ordersync.data.PropertyRepository;
 import com.purcotton.omni.ordersync.domain.Property;
 import lombok.SneakyThrows;
@@ -36,7 +37,7 @@ public class ScheduleScanner extends QuartzJobBean {
 
             if (!applicationContext.isBeanNameInUse(beanName)) {
                 applicationContext.registerBeanDefinition(beanName, beanDefinition);
-//                applicationContext.publishEvent(new RegisterEvent(property));
+                applicationContext.publishEvent(new AdditionEvent(property));
             }
         }
     }
