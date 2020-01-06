@@ -28,7 +28,7 @@ spring:
   flyway:
     enabled: false
   datasource:
-    url: jdbc:mysql://192.168.206.201:3306/tradedb?characterEncoding=utf-8&useUnicode=true&useSSL=false&allowMultiQueries=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.206.205:3306/tradedb?characterEncoding=utf-8&useUnicode=true&useSSL=false&allowMultiQueries=true&serverTimezone=Asia/Shanghai
     username: tradeuser
     password: Tradeuser123
   jpa:
