@@ -18,7 +18,7 @@ public class Log {
     @ManyToOne
     private Schedule schedule;
 
-    @Column(columnDefinition = "blob")
+    @Lob
     private String message;
 
     @Column(columnDefinition = "integer")
@@ -36,7 +36,6 @@ public class Log {
     @Column(precision = 19, scale = 2)
     private Double saveTime;
 
-    @Column(columnDefinition = "datetime")
     private LocalDateTime createdTime;
 
     public Log(Schedule schedule, Integer totalNumber,

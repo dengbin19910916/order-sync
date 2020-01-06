@@ -36,7 +36,6 @@ public class Property {
 
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(columnDefinition = "datetime")
     private LocalDateTime originTime;
 
     private boolean enabled;
@@ -97,10 +96,8 @@ public class Property {
     @Column(length = 100)
     private String updatedTimePath;
 
-    @Column(columnDefinition = "datetime")
     private LocalDateTime createdTime = LocalDateTime.now();
 
-    @Column(columnDefinition = "datetime")
     private LocalDateTime updatedTime = LocalDateTime.now();
 
     @JSONField(serialize = false)

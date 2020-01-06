@@ -1,12 +1,13 @@
 spring:
   profiles:
-    active: local
+    active: pg
 ---
 spring:
   profiles: local
   flyway:
     enabled: false
   datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/test?characterEncoding=utf-8&useUnicode=true&useSSL=false&allowMultiQueries=true&serverTimezone=Asia/Shanghai
     username: root
     password: root
@@ -28,6 +29,7 @@ spring:
   flyway:
     enabled: false
   datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://192.168.206.205:3306/tradedb?characterEncoding=utf-8&useUnicode=true&useSSL=false&allowMultiQueries=true&serverTimezone=Asia/Shanghai
     username: tradeuser
     password: Tradeuser123
@@ -36,6 +38,29 @@ spring:
       ddl-auto: update
     show-sql: false
     open-in-view: true
+logging:
+  level:
+    com:
+      purcotton:
+        omni:
+          ordersync:
+            core: info
+---
+spring:
+  profiles: pg
+  flyway:
+    enabled: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/test
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: true
+    database: postgresql
 logging:
   level:
     com:

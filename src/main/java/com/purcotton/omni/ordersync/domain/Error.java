@@ -16,9 +16,8 @@ public class Error {
     @ManyToOne
     private Schedule schedule;
 
-    @Column(columnDefinition = "blob")
+    @Lob
     private String message;
 
-    @Column(columnDefinition = "datetime")
     private LocalDateTime createdTime;
 }
