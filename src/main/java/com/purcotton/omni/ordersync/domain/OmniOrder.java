@@ -19,6 +19,7 @@ public class OmniOrder {
 
     private String rid;
 
+    @Column(columnDefinition = "json")
     private String data;
 
     private LocalDateTime createdTime;

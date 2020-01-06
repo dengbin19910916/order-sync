@@ -1,11 +1,7 @@
 package com.purcotton.omni.ordersync.config;
 
-import com.purcotton.omni.ordersync.core.ScheduleScanner;
+import com.purcotton.omni.ordersync.core.SynchronizerScanner;
 import com.purcotton.omni.ordersync.core.SyncScheduler;
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -27,21 +23,22 @@ public class ScheduleConfig {
                 .forJob(jobDetail)
                 .withSchedule(
                         SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInSeconds(10)
+                                .withIntervalInSeconds(1)
                                 .repeatForever()
                 )
                 .build();
     }
 
     @Bean
-    public JobDetail scheduleManagerJobDetail() {
-        return JobBuilder.newJob(ScheduleScanner.class)
+    public JobDetail synchronizerScannerJobDetail() {
+        return JobBuilder.newJob(SynchronizerScanner.class)
                 .storeDurably()
                 .build();
     }
 
     @Bean
-    public Trigger scheduleManagerTrigger(@Qualifier("scheduleManagerJobDetail") JobDetail jobDetail) {
+    public Trigger synchronizerManagerTrigger(
+            @Qualifier("synchronizerScannerJobDetail") JobDetail jobDetail) {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
                 .withSchedule(
@@ -50,18 +47,5 @@ public class ScheduleConfig {
                                 .repeatForever()
                 )
                 .build();
-    }
-
-    @Bean
-    public CuratorFramework client() {
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-        CuratorFramework client = CuratorFrameworkFactory.builder()
-                .connectString("localhost:2181")
-                .retryPolicy(retryPolicy)
-                .sessionTimeoutMs(60000)
-                .connectionTimeoutMs(3000)
-                .build();
-        client.start();
-        return client;
     }
 }

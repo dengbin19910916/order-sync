@@ -19,7 +19,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class ScheduleScanner extends QuartzJobBean {
+public class SynchronizerScanner extends QuartzJobBean {
 
     private GenericApplicationContext applicationContext;
     private PropertyRepository propertyRepository;

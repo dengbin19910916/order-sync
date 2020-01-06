@@ -18,15 +18,15 @@ import javax.annotation.Nonnull;
 @Slf4j
 @Component
 @Order(1)
-public class ScheduleManager implements ApplicationListener<ApplicationEvent> {
+public class JobManager implements ApplicationListener<ApplicationEvent> {
 
     private final GenericApplicationContext applicationContext;
     private final RestTemplate restTemplate;
     private final Scheduler scheduler;
 
-    public ScheduleManager(ApplicationContext applicationContext,
-                           RestTemplate restTemplate,
-                           Scheduler scheduler) {
+    public JobManager(ApplicationContext applicationContext,
+                      RestTemplate restTemplate,
+                      Scheduler scheduler) {
         this.applicationContext = (GenericApplicationContext) applicationContext;
         this.restTemplate = restTemplate;
         this.scheduler = scheduler;
@@ -34,13 +34,18 @@ public class ScheduleManager implements ApplicationListener<ApplicationEvent> {
 
     @SneakyThrows
     private void addJob(Property property) {
-        JobDetail jobDetail = JobBuilder.newJob(Synchronizer.class).build();
-        JobDataMap jobDataMap = jobDetail.getJobDataMap();
-        jobDataMap.put("applicationContext", applicationContext);
-        jobDataMap.put("restTemplate", restTemplate);
-        jobDataMap.put("property", property);
+        JobKey jobKey = new JobKey(property.getBeanName());
+        JobDetail jobDetail = scheduler.checkExists(jobKey)
+                ? scheduler.getJobDetail(jobKey)
+                : JobBuilder.newJob(Synchronizer.class)
+                .withIdentity(jobKey)
+                .build();
 
-        Trigger trigger = TriggerBuilder.newTrigger()
+        TriggerKey triggerKey = new TriggerKey(property.getBeanName());
+        Trigger trigger = scheduler.checkExists(triggerKey)
+                ? scheduler.getTrigger(triggerKey)
+                : TriggerBuilder.newTrigger()
+                .withIdentity(triggerKey)
                 .withSchedule(
                         SimpleScheduleBuilder.simpleSchedule()
                                 .withIntervalInSeconds(property.getTriggerInterval())
@@ -49,7 +54,14 @@ public class ScheduleManager implements ApplicationListener<ApplicationEvent> {
                 )
                 .build();
 
-        scheduler.scheduleJob(jobDetail, trigger);
+        JobDataMap jobDataMap = jobDetail.getJobDataMap();
+        jobDataMap.put("applicationContext", applicationContext);
+        jobDataMap.put("restTemplate", restTemplate);
+        jobDataMap.put("property", property);
+
+        if (!scheduler.checkExists(jobKey) && !scheduler.checkExists(triggerKey)) {
+            scheduler.scheduleJob(jobDetail, trigger);
+        }
         scheduler.start();
     }
 

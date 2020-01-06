@@ -65,6 +65,8 @@ public class Property {
 
     private String tokenName;
 
+    private String tokenValue;
+
     private String tokenPath;
 
     private String cidPath;
@@ -112,6 +114,7 @@ public class Property {
                 ", pagePath='" + pagePath + '\'' +
                 ", dataPath='" + dataPath + '\'' +
                 ", tokenName='" + tokenName + '\'' +
+                ", tokenValue='" + tokenValue + '\'' +
                 ", tokenPath='" + tokenPath + '\'' +
                 ", cidPath='" + cidPath + '\'' +
                 ", tidPath='" + tidPath + '\'' +

@@ -17,10 +17,13 @@ import org.quartz.JobExecutionContext;
 import org.quartz.PersistJobDataAfterExecution;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.RequestEntity;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -51,6 +54,10 @@ public class Synchronizer implements Job {
         schedule.ifPresent(value -> {
             try {
                 pullAndSave(value, property, restTemplate, orderRepository);
+
+                value.setCompleted(true);
+                value.setUpdatedTime(LocalDateTime.now());
+                scheduleRepository.save(value);
             } catch (Exception e) {
                 Log log = buildLog(value, e);
                 logRepository.save(log);
@@ -58,7 +65,8 @@ public class Synchronizer implements Job {
         });
 
         if (log.isDebugEnabled()) {
-            log.info("{} synced. ", property.getOrderChannel());
+            log.debug("{} [{} - {}] synced. ", property.getOrderChannel(),
+                    property.getOrderType(), property.getShopCode());
         }
     }
 
@@ -85,6 +93,7 @@ public class Synchronizer implements Job {
                     }
                     orderRepository.save(order);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     throw new SyncException("Save data failed", e);
                 }
             });
@@ -93,12 +102,9 @@ public class Synchronizer implements Job {
 
     private PageInfo getPage(RestTemplate restTemplate, Property property, Schedule schedule) {
         try {
-            String pageUrl = getParameterUrl(property.getHost(), property.getPagePath(),
-                    schedule.getStartTime().format(formatter), schedule.getEndTime().format(formatter),
-                    property.getPageSize(), null);
-            return restTemplate.exchange(RequestEntity.get(new URI(pageUrl))
-                            .header(property.getTokenName(), getUrl(property.getHost(), property.getTokenPath()))
-                            .build(),
+            String pageUrl = getParameterUrl(property, schedule, property.getPagePath(), null);
+            return restTemplate.exchange(pageUrl, HttpMethod.GET,
+                    new HttpEntity<>(null, headers(property.getTokenName(), property.getTokenValue())),
                     new ParameterizedTypeReference<PageInfo>() {
                     })
                     .getBody();
@@ -107,15 +113,18 @@ public class Synchronizer implements Job {
         }
     }
 
-    @SneakyThrows
+    private HttpHeaders headers(String tokenName, String tokenValue) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add(tokenName, tokenValue);
+        return headers;
+    }
+
     private List<JSONObject> getData(RestTemplate restTemplate, Property property, Schedule schedule, int pageNumber) {
         try {
-            String dataUrl = getParameterUrl(property.getHost(), property.getPagePath(),
-                    schedule.getStartTime().format(formatter), schedule.getEndTime().format(formatter),
-                    property.getPageSize(), pageNumber);
-            return restTemplate.exchange(RequestEntity.get(new URI(dataUrl))
-                            .header(property.getTokenName(), getUrl(property.getHost(), property.getTokenPath()))
-                            .build(),
+            String dataUrl = getParameterUrl(property, schedule, property.getDataPath(), pageNumber);
+            return restTemplate.exchange(dataUrl, HttpMethod.GET,
+                    new HttpEntity<>(null, headers(property.getTokenName(), property.getTokenValue())),
                     new ParameterizedTypeReference<List<JSONObject>>() {
                     })
                     .getBody();
@@ -128,7 +137,9 @@ public class Synchronizer implements Job {
         OmniOrder order = new OmniOrder();
         order.setCid(getJsonValue(datum, property.getCidPath()));
         order.setTid(getJsonValue(datum, property.getTidPath()));
-        order.setRid(getJsonValue(datum, property.getRidPath()));
+        if (!ObjectUtils.isEmpty(property.getRidPath())) {
+            order.setRid(getJsonValue(datum, property.getRidPath()));
+        }
         order.setData(datum.toString());
         order.setCreatedTime(LocalDateTime.parse(getJsonValue(datum, property.getCreatedTimePath()), formatter));
         order.setUpdatedTime(LocalDateTime.parse(getJsonValue(datum, property.getUpdatedTimePath()), formatter));
@@ -138,7 +149,12 @@ public class Synchronizer implements Job {
     }
 
     private String getJsonValue(JSONObject object, String path) {
-        return JSONPath.eval(object, path).toString();
+        try {
+            return JSONPath.eval(object, path).toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     private Log buildLog(Schedule value, Exception e) {
@@ -149,12 +165,17 @@ public class Synchronizer implements Job {
         return log;
     }
 
-    private String getParameterUrl(String host, String path, String startTime, String endTime,
-                                   Integer pageSize, Integer pageNumber) {
-        String result = String.format(getUrl(host, path) + "?startTime=%s&endTime=%s&pageSize=%d",
-                startTime, endTime, pageSize);
+    private String getParameterUrl(Property property, Schedule schedule,
+                                   String path, Integer pageNumber) {
+        String result = String.format(getUrl(property.getHost(), path)
+                        + "?startTime=%s&endTime=%s&pageSize=%d&size=%d",
+                schedule.getStartTime().format(formatter), schedule.getEndTime().format(formatter),
+                property.getPageSize(), property.getPageSize());
+        if (!ObjectUtils.isEmpty(property.getShopCode())) {
+            result += "&shopCode=" + property.getShopCode();
+        }
         if (pageNumber != null) {
-            result += "&pageNumber=" + pageNumber;
+            result += "&pageNumber=" + pageNumber + "&pageNumber=" + pageNumber;
         }
         return result;
     }
