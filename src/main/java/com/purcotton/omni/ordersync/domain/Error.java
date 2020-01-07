@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @Entity
-//@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Error {
 
     @Id
@@ -19,7 +18,6 @@ public class Error {
     @ManyToOne
     private Schedule schedule;
 
-//    @Type(type = "jsonb")
     @Column(columnDefinition = "json")
     private String data;
 

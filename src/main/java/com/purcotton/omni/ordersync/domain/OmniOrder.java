@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
         @Index(name = "idx_order_property_cid", columnList = "property_id"),
         @Index(name = "idx_order_property_cid", columnList = "cid")
 })
-//@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)  // PostgresQL
 public class OmniOrder {
 
     @Id
@@ -30,7 +29,6 @@ public class OmniOrder {
     @Column(length = 64)
     private String rid;
 
-//    @Type(type = "jsonb")
     @Column(columnDefinition = "json")
     private String data;
 
