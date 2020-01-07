@@ -4,6 +4,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.common.base.CaseFormat;
 import lombok.Data;
+import org.springframework.http.HttpMethod;
 import org.springframework.util.ObjectUtils;
 
 import javax.persistence.*;
@@ -63,6 +64,10 @@ public class Property {
     @Column(columnDefinition = "integer")
     private Integer triggerInterval;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private HttpMethod httpMethod;
+
     @Column(length = 100)
     private String host;
 
@@ -71,6 +76,9 @@ public class Property {
 
     @Column(length = 300)
     private String dataPath;
+
+    @Column(length = 100)
+    private String body;
 
     @Column(length = 30)
     private String tokenName;

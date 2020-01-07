@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @PersistJobDataAfterExecution
 public class Synchronizer implements InterruptableJob {
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private Thread currentThread;
 
@@ -95,7 +95,7 @@ public class Synchronizer implements InterruptableJob {
         AtomicInteger succeedNumber = new AtomicInteger();
         AtomicInteger failedNumber = new AtomicInteger();
 
-        int pageNumber = Objects.requireNonNull(pageInfo).getTotalPages();
+        int pageNumber = Objects.requireNonNull(pageInfo).getTotalPages();  // 页数从0开始
         while (pageNumber-- > 0) {
             pullWatch.start();
             List<JSONObject> data = getData(restTemplate, property, schedule, pageNumber);
@@ -136,8 +136,8 @@ public class Synchronizer implements InterruptableJob {
 
     private PageInfo getPage(RestTemplate restTemplate, Property property, Schedule schedule) {
         try {
-            String pageUrl = getParameterUrl(property, schedule, property.getPagePath(), null);
-            return restTemplate.exchange(pageUrl, HttpMethod.GET,
+            String pageUrl = UrlType.PAGE.getParameterUrl(property, schedule, null);
+            return restTemplate.exchange(pageUrl, property.getHttpMethod(),
                     new HttpEntity<>(null, headers(property.getTokenName(), property.getTokenValue())),
                     new ParameterizedTypeReference<PageInfo>() {
                     })
@@ -157,7 +157,7 @@ public class Synchronizer implements InterruptableJob {
 
     private List<JSONObject> getData(RestTemplate restTemplate, Property property, Schedule schedule, int pageNumber) {
         try {
-            String dataUrl = getParameterUrl(property, schedule, property.getDataPath(), pageNumber);
+            String dataUrl = UrlType.DATA.getParameterUrl(property, schedule, pageNumber);
             return restTemplate.exchange(dataUrl, HttpMethod.GET,
                     new HttpEntity<>(null, headers(property.getTokenName(), property.getTokenValue())),
                     new ParameterizedTypeReference<List<JSONObject>>() {
@@ -178,8 +178,8 @@ public class Synchronizer implements InterruptableJob {
             order.setRid(getJsonValue(datum, property.getRidPath()));
         }
         order.setData(datum.toString());
-        order.setCreatedTime(LocalDateTime.parse(getJsonValue(datum, property.getCreatedTimePath()), formatter));
-        order.setUpdatedTime(LocalDateTime.parse(getJsonValue(datum, property.getUpdatedTimePath()), formatter));
+        order.setCreatedTime(LocalDateTime.parse(getJsonValue(datum, property.getCreatedTimePath()), FORMATTER));
+        order.setUpdatedTime(LocalDateTime.parse(getJsonValue(datum, property.getUpdatedTimePath()), FORMATTER));
         order.setSyncCreatedTime(now);
         order.setSyncUpdatedTime(now);
         return order;
@@ -202,34 +202,34 @@ public class Synchronizer implements InterruptableJob {
         return log;
     }
 
-    private String getParameterUrl(Property property, Schedule schedule,
-                                   String path, Integer pageNumber) {
-        String result = String.format(getUrl(property.getHost(), path)
-                        + "?startTime=%s&endTime=%s&pageSize=%d&size=%d",
-                schedule.getStartTime().format(formatter), schedule.getEndTime().format(formatter),
-                property.getPageSize(), property.getPageSize());
-        if (!ObjectUtils.isEmpty(property.getShopCode())) {
-            result += "&shopCode=" + property.getShopCode();
-        }
-        if (pageNumber != null) {
-            result += "&pageNumber=" + pageNumber + "&page=" + pageNumber;
-        }
-        return result;
-    }
-
-    private String getUrl(String host, String path) {
-        return host + "/" + path;
-    }
-
     @Override
     public void interrupt() throws UnableToInterruptJobException {
         if (currentThread == null) {
-            throw new UnableToInterruptJobException("Thread not found");
+            throw new UnableToInterruptJobException("Current thread cannot be null.");
         }
 
         if (log.isDebugEnabled()) {
             log.debug("Job interrupt.");
         }
         currentThread.interrupt();
+    }
+
+    private enum UrlType {
+        PAGE,
+        DATA;
+
+        public String getParameterUrl(Property property, Schedule schedule, Integer pageNumber) {
+            String pagePath = (this == PAGE ? property.getPagePath() : property.getDataPath())
+                    .replaceAll("\\{startTime}", schedule.getStartTime().format(FORMATTER))
+                    .replaceAll("\\{endTime}", schedule.getEndTime().format(FORMATTER))
+                    .replaceAll("\\{pageSize}", property.getPageSize().toString());
+            if (pagePath.contains("{shopCode}")) {
+                pagePath = pagePath.replaceAll("\\{shopCode}", property.getShopCode());
+            }
+            if (pagePath.contains("{pageNumber}")) {
+                pagePath = pagePath.replaceAll("\\{pageNumber}", pageNumber.toString());
+            }
+            return property.getHost() + "/" + pagePath;
+        }
     }
 }
