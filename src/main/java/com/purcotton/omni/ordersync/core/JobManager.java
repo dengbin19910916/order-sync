@@ -9,7 +9,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,7 +16,6 @@ import javax.annotation.Nonnull;
 
 @Slf4j
 @Component
-@Order(1)
 public class JobManager implements ApplicationListener<ApplicationEvent> {
 
     private final GenericApplicationContext applicationContext;
