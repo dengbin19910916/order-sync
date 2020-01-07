@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: local
 ---
 spring:
   profiles: local
@@ -12,6 +12,7 @@ spring:
     username: root
     password: root
   jpa:
+    database: mysql
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -34,6 +35,7 @@ spring:
     username: tradeuser
     password: Tradeuser123
   jpa:
+    database: mysql
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -52,15 +54,15 @@ spring:
     enabled: false
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/test
+    url: jdbc:postgresql://localhost:5432/test01
     username: postgres
     password: postgres
   jpa:
+    database: postgresql
     hibernate:
       ddl-auto: update
     show-sql: false
     open-in-view: true
-    database: postgresql
 logging:
   level:
     com:

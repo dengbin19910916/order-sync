@@ -1,9 +1,6 @@
 package com.purcotton.omni.ordersync.domain;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.Data;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -17,7 +14,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_order_property_cid", columnList = "property_id"),
         @Index(name = "idx_order_property_cid", columnList = "cid")
 })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+//@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)  // PostgresQL
 public class OmniOrder {
 
     @Id
@@ -33,8 +30,8 @@ public class OmniOrder {
     @Column(length = 64)
     private String rid;
 
-    @Type(type = "jsonb")
-    @Column(columnDefinition = "jsonb")
+//    @Type(type = "jsonb")
+    @Column(columnDefinition = "json")
     private String data;
 
     private LocalDateTime createdTime;
