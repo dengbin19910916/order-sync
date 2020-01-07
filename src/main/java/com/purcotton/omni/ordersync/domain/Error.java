@@ -1,8 +1,10 @@
 package com.purcotton.omni.ordersync.domain;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @Entity
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class Error {
 
     @Id
@@ -19,8 +22,8 @@ public class Error {
     @ManyToOne
     private Schedule schedule;
 
-    @Type(type = "json")
-    @Column(columnDefinition = "json")
+    @Type(type = "jsonb")
+    @Column(columnDefinition = "jsonb")
     private String data;
 
     @Lob
