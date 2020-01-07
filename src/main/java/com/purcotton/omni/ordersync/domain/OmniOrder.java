@@ -1,6 +1,6 @@
 package com.purcotton.omni.ordersync.domain;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import lombok.Data;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
         @Index(columnList = "cid"),
         @Index(columnList = "tid"),
         @Index(columnList = "rid"),
-        @Index(name="idx_order_property_cid",columnList = "property_id"),
-        @Index(name="idx_order_property_cid",columnList = "cid")
+        @Index(name = "idx_order_property_cid", columnList = "property_id"),
+        @Index(name = "idx_order_property_cid", columnList = "cid")
 })
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@TypeDef(name = "jsonb", typeClass = JsonStringType.class)
 public class OmniOrder {
 
     @Id

@@ -2,9 +2,11 @@ package com.purcotton.omni.ordersync.core;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
+import com.purcotton.omni.ordersync.data.ErrorRepository;
 import com.purcotton.omni.ordersync.data.LogRepository;
 import com.purcotton.omni.ordersync.data.OrderRepository;
 import com.purcotton.omni.ordersync.data.ScheduleRepository;
+import com.purcotton.omni.ordersync.domain.Error;
 import com.purcotton.omni.ordersync.domain.Log;
 import com.purcotton.omni.ordersync.domain.OmniOrder;
 import com.purcotton.omni.ordersync.domain.Property;
@@ -51,9 +53,7 @@ public class Synchronizer implements InterruptableJob {
         var property = (Property) jobDataMap.get("property");
 
         var scheduleRepository = applicationContext.getBean(ScheduleRepository.class);
-        var orderRepository = applicationContext.getBean(OrderRepository.class);
         var logRepository = applicationContext.getBean(LogRepository.class);
-        var restTemplate = applicationContext.getBean(RestTemplate.class);
 
         var schedule = scheduleRepository
                 .findFirstByPropertyAndCompletedOrderByStartTime(property, false);
@@ -61,7 +61,7 @@ public class Synchronizer implements InterruptableJob {
         schedule.ifPresent(value -> {
             Log log = null;
             try {
-                log = pullAndSave(value, property, restTemplate, orderRepository);
+                log = pullAndSave(value, property, applicationContext);
 
                 value.setCompleted(true);
                 value.setUpdatedTime(LocalDateTime.now());
@@ -83,7 +83,11 @@ public class Synchronizer implements InterruptableJob {
     }
 
     private Log pullAndSave(Schedule schedule, Property property,
-                            RestTemplate restTemplate, OrderRepository orderRepository) {
+                            ApplicationContext applicationContext) {
+        var orderRepository = applicationContext.getBean(OrderRepository.class);
+        var errorRepository = applicationContext.getBean(ErrorRepository.class);
+        var restTemplate = applicationContext.getBean(RestTemplate.class);
+
         StopWatch pullWatch = new StopWatch("PullWatch");
         StopWatch saveWatch = new StopWatch("SaveWatch");
 
@@ -124,6 +128,10 @@ public class Synchronizer implements InterruptableJob {
                     e.printStackTrace();
                     failedNumber.getAndIncrement();
                     totalNumber.getAndIncrement();
+
+                    Error error = new Error(schedule, datum.toJSONString(), e.getMessage());
+                    errorRepository.save(error);
+
                     throw new SyncException("Save data failed", e);
                 }
             });
