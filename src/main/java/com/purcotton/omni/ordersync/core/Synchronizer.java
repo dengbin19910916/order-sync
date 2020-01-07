@@ -7,10 +7,7 @@ import com.purcotton.omni.ordersync.data.LogRepository;
 import com.purcotton.omni.ordersync.data.OrderRepository;
 import com.purcotton.omni.ordersync.data.ScheduleRepository;
 import com.purcotton.omni.ordersync.domain.Error;
-import com.purcotton.omni.ordersync.domain.Log;
-import com.purcotton.omni.ordersync.domain.OmniOrder;
-import com.purcotton.omni.ordersync.domain.Property;
-import com.purcotton.omni.ordersync.domain.Schedule;
+import com.purcotton.omni.ordersync.domain.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
@@ -26,9 +23,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @DisallowConcurrentExecution
@@ -227,17 +228,29 @@ public class Synchronizer implements InterruptableJob {
         DATA;
 
         public String getParameterUrl(Property property, Schedule schedule, Integer pageNumber) {
-            String pagePath = (this == PAGE ? property.getPagePath() : property.getDataPath())
-                    .replaceAll("\\{startTime}", schedule.getStartTime().format(FORMATTER))
-                    .replaceAll("\\{endTime}", schedule.getEndTime().format(FORMATTER))
-                    .replaceAll("\\{pageSize}", property.getPageSize().toString());
-            if (pagePath.contains("{shopCode}")) {
-                pagePath = pagePath.replaceAll("\\{shopCode}", property.getShopCode());
+            Map<String, Object> paramsMap = new HashMap<>() {{
+                put("#startTime", schedule.getStartTime().format(FORMATTER));
+                put("#endTime", schedule.getEndTime().format(FORMATTER));
+                put("#pageSize", property.getPageSize());
+                put("#pageNumber", pageNumber);
+                put("#shopCode", property.getShopCode());
+            }};
+
+            String path = this == PAGE ? property.getPagePath() : property.getDataPath();
+            List<String> existsParams =  Stream.of(PARAMS)
+                    .filter(path::contains)
+                    .collect(Collectors.toList());
+            for (String existsParam : existsParams) {
+                path = path.replaceAll(existsParam, paramsMap.get(existsParam).toString());
             }
-            if (pagePath.contains("{pageNumber}")) {
-                pagePath = pagePath.replaceAll("\\{pageNumber}", pageNumber.toString());
-            }
-            return property.getHost() + "/" + pagePath;
+
+            return property.getHost() + "/" + path;
         }
+
+        private static final String[] PARAMS = new String[]{
+                "#startTime", "#endTime",
+                "#pageSize", "#pageNumber",
+                "#shopCode"
+        };
     }
 }
