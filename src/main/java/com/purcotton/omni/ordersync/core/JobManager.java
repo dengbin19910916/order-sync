@@ -1,6 +1,6 @@
 package com.purcotton.omni.ordersync.core;
 
-import com.purcotton.omni.ordersync.core.event.AdditionEvent;
+import com.purcotton.omni.ordersync.core.event.JobAdditionEvent;
 import com.purcotton.omni.ordersync.domain.Property;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +66,7 @@ public class JobManager implements ApplicationListener<ApplicationEvent> {
     @SneakyThrows
     @Override
     public void onApplicationEvent(@Nonnull ApplicationEvent event) {
-        if (event instanceof AdditionEvent) {
+        if (event instanceof JobAdditionEvent) {
             addJob((Property) event.getSource());
         }
     }
