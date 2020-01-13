@@ -4,14 +4,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.purcotton.omni.ordersync.data.ErrorRepository;
 import com.purcotton.omni.ordersync.data.LogRepository;
-import com.purcotton.omni.ordersync.data.OrderRepository;
+import com.purcotton.omni.ordersync.data.OmniOrderRepository;
 import com.purcotton.omni.ordersync.data.ScheduleRepository;
 import com.purcotton.omni.ordersync.domain.Error;
 import com.purcotton.omni.ordersync.domain.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -34,9 +34,21 @@ import java.util.stream.Stream;
 @Slf4j
 @DisallowConcurrentExecution
 @PersistJobDataAfterExecution
+@SuppressWarnings("all")
 public class Synchronizer implements InterruptableJob {
 
     private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    @Autowired
+    private RestTemplate restTemplate;
+    @Autowired
+    private ScheduleRepository scheduleRepository;
+    @Autowired
+    private LogRepository logRepository;
+    @Autowired
+    private ErrorRepository errorRepository;
+    @Autowired
+    private OmniOrderRepository orderRepository;
 
     private Thread currentThread;
 
@@ -50,11 +62,7 @@ public class Synchronizer implements InterruptableJob {
         }
 
         var jobDataMap = context.getMergedJobDataMap();
-        var applicationContext = (ApplicationContext) jobDataMap.get("applicationContext");
         var property = (Property) jobDataMap.get("property");
-
-        var scheduleRepository = applicationContext.getBean(ScheduleRepository.class);
-        var logRepository = applicationContext.getBean(LogRepository.class);
 
         var schedule = scheduleRepository
                 .findFirstByPropertyAndCompletedOrderByStartTime(property, false);
@@ -62,7 +70,7 @@ public class Synchronizer implements InterruptableJob {
         schedule.ifPresent(value -> {
             Log log = null;
             try {
-                log = pullAndSave(value, property, applicationContext);
+                log = pullAndSave(value, property);
 
                 value.setCompleted(true);
                 value.setUpdatedTime(LocalDateTime.now());
@@ -83,12 +91,7 @@ public class Synchronizer implements InterruptableJob {
         }
     }
 
-    private Log pullAndSave(Schedule schedule, Property property,
-                            ApplicationContext applicationContext) {
-        var orderRepository = applicationContext.getBean(OrderRepository.class);
-        var errorRepository = applicationContext.getBean(ErrorRepository.class);
-        var restTemplate = applicationContext.getBean(RestTemplate.class);
-
+    private Log pullAndSave(Schedule schedule, Property property) {
         StopWatch pullWatch = new StopWatch("PullWatch");
         StopWatch saveWatch = new StopWatch("SaveWatch");
 
